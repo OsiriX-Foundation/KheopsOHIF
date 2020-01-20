@@ -2,9 +2,7 @@ FROM alpine/git as download
 RUN mkdir /tmp/app
 WORKDIR /tmp/app
 
-RUN git clone https://github.com/OHIF/Viewers.git
-RUN ls /tmp/app
-RUN ls /tmp/app/Viewers
+RUN git clone https://github.com/OHIF/Viewers.git --depth 1
 
 FROM node:10.16.3-slim as builder
 
@@ -27,9 +25,6 @@ COPY --from=download /tmp/app/Viewers/yarn.lock /usr/src/app/yarn.lock
 COPY default.js /usr/src/app/platform/viewer/public/config/default.js
 COPY default.conf /usr/src/app/.docker/Viewer-v2.x/default.conf
 
-RUN cat /usr/src/app/platform/viewer/public/config/default.js
-RUN cat /usr/src/app/.docker/Viewer-v2.x/default.conf
-
 # Run the install before copying the rest of the files
 RUN yarn config set workspaces-experimental true
 RUN yarn install
@@ -41,14 +36,13 @@ ENV QUICK_BUILD true
 
 RUN yarn run build
 
-RUN ls /usr/src/app/platform/viewer
 # Stage 2: Bundle the built application into a Docker container
 # which runs Nginx using Alpine Linux
 FROM nginx:1.17.6-alpine
 RUN apk add --no-cache bash
 RUN rm -rf /etc/nginx/conf.d
-COPY --from=download /tmp/app/Viewers/.docker/Viewer-v2.x /etc/nginx/conf.d
-COPY --from=download /tmp/app/Viewers/.docker/Viewer-v2.x/entrypoint.sh /usr/src/
+COPY --from=builder /usr/src/app/.docker/Viewer-v2.x /etc/nginx/conf.d
+COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /usr/src/
 RUN chmod 777 /usr/src/entrypoint.sh
 COPY --from=builder /usr/src/app/platform/viewer/dist /usr/share/nginx/html
 EXPOSE 80
