@@ -23,7 +23,6 @@ COPY --from=download /tmp/app/Viewers/postcss.config.js /usr/src/app/postcss.con
 COPY --from=download /tmp/app/Viewers/yarn.lock /usr/src/app/yarn.lock
 
 COPY default.js /usr/src/app/platform/viewer/public/config/default.js
-COPY default.conf /usr/src/app/.docker/Viewer-v2.x/default.conf
 
 # Run the install before copying the rest of the files
 RUN yarn config set workspaces-experimental true
@@ -41,7 +40,7 @@ RUN yarn run build
 FROM nginx:1.17.6-alpine
 RUN apk add --no-cache bash
 RUN rm -rf /etc/nginx/conf.d
-COPY --from=builder /usr/src/app/.docker/Viewer-v2.x /etc/nginx/conf.d
+COPY default.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /usr/src/
 RUN chmod 777 /usr/src/entrypoint.sh
 COPY --from=builder /usr/src/app/platform/viewer/dist /usr/share/nginx/html
