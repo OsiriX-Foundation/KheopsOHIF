@@ -2,7 +2,9 @@ FROM alpine/git as download
 RUN mkdir /tmp/app
 WORKDIR /tmp/app
 
-RUN git clone https://github.com/OHIF/Viewers.git --depth 1
+# RUN git clone https://github.com/OHIF/Viewers.git --depth 1
+# RUN git clone https://github.com/OHIF/Viewers.git --depth 1 -b refactor/1387 --single-branch
+RUN git clone https://github.com/OsiriX-Foundation/Viewers.git --depth 1 -b projectweek --single-branch
 
 FROM node:10.16.3-slim as builder
 
