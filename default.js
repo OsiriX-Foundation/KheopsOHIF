@@ -25,7 +25,7 @@ window.config = {
       // Authorization Server URL
       authority: 'http://129.194.217.90/.well-known/openid-configuration',
       client_id: 'ohif-viewer',
-      redirect_uri: 'https://test.kheops.online/ohif/callback', // `OHIFStandaloneViewer.js`
+      redirect_uri: 'https://test2.kheops.online/ohif/callback', // `OHIFStandaloneViewer.js`
       response_type: 'code', // "Authorization Code Flow"
       scope: 'openid', // email profile openid
     },
