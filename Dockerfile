@@ -42,7 +42,7 @@ RUN yarn run build
 FROM nginx:1.19.8-alpine
 RUN apk add --no-cache bash
 
-COPY default.conf /etc/nginx/templates/default.conf
+COPY default.conf /etc/nginx/templates/default.conf.template
 COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /docker-entrypoint.d/1-ohif-entrypoint.sh
 RUN chmod 777 /docker-entrypoint.d/1-ohif-entrypoint.sh
 COPY --from=builder /usr/src/app/platform/viewer/dist /usr/share/nginx/html
