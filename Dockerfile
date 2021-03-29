@@ -41,12 +41,11 @@ RUN yarn run build
 # which runs Nginx using Alpine Linux
 FROM nginx:1.19.8-alpine
 RUN apk add --no-cache bash
-RUN rm -rf /etc/nginx/conf.d
-COPY default.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /usr/src/
-RUN chmod 777 /usr/src/entrypoint.sh
+COPY default.conf /etc/nginx/templates/default.conf.template
+COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /docker-entrypoint.d/1-ohif-entrypoint.sh
+RUN chmod 777 /docker-entrypoint.d/1-ohif-entrypoint.sh
 COPY --from=builder /usr/src/app/platform/viewer/dist /usr/share/nginx/html
 EXPOSE 80
 EXPOSE 443
-ENTRYPOINT ["/usr/src/entrypoint.sh"]
+
 CMD ["nginx", "-g", "daemon off;"]
