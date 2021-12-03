@@ -3,10 +3,11 @@ RUN mkdir /tmp/app
 WORKDIR /tmp/app
 
 # RUN git clone https://github.com/OHIF/Viewers.git --depth 1
-# RUN git clone https://github.com/OHIF/Viewers.git --depth 1 -b refactor/1387 --single-branch
-RUN git clone https://github.com/OsiriX-Foundation/Viewers.git --depth 1 -b projectweek --single-branch
+RUN git clone https://github.com/OsiriX-Foundation/Viewers.git --depth 1 -b master --single-branch
 
-FROM node:10.16.3-slim as builder
+# Stage 1: Build the application
+# docker build -t ohif/viewer:latest .
+FROM node:15.13.0-slim as builder
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
@@ -26,6 +27,7 @@ COPY --from=download /tmp/app/Viewers/yarn.lock /usr/src/app/yarn.lock
 
 COPY default.js /usr/src/app/platform/viewer/public/config/default.js
 
+RUN apt-get update && apt-get install -y python make g++
 # Run the install before copying the rest of the files
 RUN yarn config set workspaces-experimental true
 RUN yarn install
@@ -39,13 +41,20 @@ RUN yarn run build
 
 # Stage 2: Bundle the built application into a Docker container
 # which runs Nginx using Alpine Linux
-FROM nginx:1.19.8-alpine
+FROM nginx:1.21.1-alpine
 RUN apk add --no-cache bash
+RUN rm -rf /etc/nginx/conf.d
+
 COPY default.conf /etc/nginx/templates/default.conf.template
-COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /docker-entrypoint.d/1-ohif-entrypoint.sh
-RUN chmod 777 /docker-entrypoint.d/1-ohif-entrypoint.sh
+
+COPY --from=builder /usr/src/app/.docker/Viewer-v2.x /etc/nginx/conf.d
+COPY --from=builder /usr/src/app/.docker/Viewer-v2.x/entrypoint.sh /usr/src/
+
+RUN chmod 777 /usr/src/entrypoint.sh
 COPY --from=builder /usr/src/app/platform/viewer/dist /usr/share/nginx/html
+
 EXPOSE 80
 EXPOSE 443
 
+ENTRYPOINT ["/usr/src/entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
