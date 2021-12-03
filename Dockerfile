@@ -3,41 +3,58 @@ RUN mkdir /tmp/app
 WORKDIR /tmp/app
 
 # RUN git clone https://github.com/OHIF/Viewers.git --depth 1
-RUN git clone https://github.com/OsiriX-Foundation/Viewers.git --depth 1 -b master --single-branch
+RUN git clone https://github.com/OsiriX-Foundation/Viewers.git --depth 1 -b v3-stable --single-branch
 
 # Stage 1: Build the application
 # docker build -t ohif/viewer:latest .
-FROM node:15.13.0-slim as builder
+FROM node:14.3.0-slim as json-copier
 
 RUN mkdir /usr/src/app
 WORKDIR /usr/src/app
 
 # Copy Files
-COPY --from=download /tmp/app/Viewers/.docker /usr/src/app/.docker
-COPY --from=download /tmp/app/Viewers/.webpack /usr/src/app/.webpack
-COPY --from=download /tmp/app/Viewers/extensions /usr/src/app/extensions
-COPY --from=download /tmp/app/Viewers/platform /usr/src/app/platform
-COPY --from=download /tmp/app/Viewers/.browserslistrc /usr/src/app/.browserslistrc
-COPY --from=download /tmp/app/Viewers/aliases.config.js /usr/src/app/aliases.config.js
-COPY --from=download /tmp/app/Viewers/babel.config.js /usr/src/app/babel.config.js
-COPY --from=download /tmp/app/Viewers/lerna.json /usr/src/app/lerna.json
 COPY --from=download /tmp/app/Viewers/package.json /usr/src/app/package.json
-COPY --from=download /tmp/app/Viewers/postcss.config.js /usr/src/app/postcss.config.js
 COPY --from=download /tmp/app/Viewers/yarn.lock /usr/src/app/yarn.lock
 
+#TODO COPY ./
+
+COPY --from=download /tmp/app/Viewers/extensions /usr/src/app/extensions
+COPY --from=download /tmp/app/Viewers/modes /usr/src/app/modes
+COPY --from=download /tmp/app/Viewers/platform /usr/src/app/platform
+
+# Find and remove non-package.json files
+RUN find extensions \! -name "package.json" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+RUN find modes \! -name "package.json" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+RUN find platform \! -name "package.json" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+
+#TODO : still needed?
 COPY default.js /usr/src/app/platform/viewer/public/config/default.js
 
-RUN apt-get update && apt-get install -y python make g++
+# Find and remove non-package.json files
+RUN find extensions \! -name "package.json" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+RUN find modes \! -name "package.json" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+RUN find platform \! -name "package.json" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+
+# Copy Files
+FROM node:14.3.0-slim as builder
+RUN mkdir /usr/src/app
+WORKDIR /usr/src/app
+
+COPY --from=json-copier /usr/src/app .
+
 # Run the install before copying the rest of the files
 RUN yarn config set workspaces-experimental true
-RUN yarn install
+RUN yarn install --frozen-lockfile --verbose
+
+COPY --from=download /tmp/app/Viewers/ .
+
+# To restore workspaces symlinks
+RUN yarn install --frozen-lockfile --verbose
 
 ENV PATH /usr/src/app/node_modules/.bin:$PATH
 ENV QUICK_BUILD true
-# ENV GENERATE_SOURCEMAP=false
-# ENV REACT_APP_CONFIG=config/default.js
 
-RUN yarn run build
+RUN yarn run build --verbose
 
 # Stage 2: Bundle the built application into a Docker container
 # which runs Nginx using Alpine Linux
