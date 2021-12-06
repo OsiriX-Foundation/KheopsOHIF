@@ -44,17 +44,17 @@ COPY --from=json-copier /usr/src/app .
 
 # Run the install before copying the rest of the files
 RUN yarn config set workspaces-experimental true
-RUN yarn install --frozen-lockfile --verbose
+RUN yarn install --frozen-lockfile
 
 COPY --from=download /tmp/app/Viewers/ .
 
 # To restore workspaces symlinks
-RUN yarn install --frozen-lockfile --verbose
+RUN yarn install --frozen-lockfile
 
 ENV PATH /usr/src/app/node_modules/.bin:$PATH
 ENV QUICK_BUILD true
 
-RUN yarn run build --verbose
+RUN yarn run build
 
 # Stage 2: Bundle the built application into a Docker container
 # which runs Nginx using Alpine Linux
